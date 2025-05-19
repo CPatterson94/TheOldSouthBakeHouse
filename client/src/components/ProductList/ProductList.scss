@@ -1,0 +1,19 @@
+@import "../../styles/main.scss";
+
+.product-list-container {
+  padding: 20px;
+  text-align: center;
+
+  h2 {
+    color: $secondary-color-black;
+    margin-bottom: 30px;
+    font-size: 2em;
+  }
+}
+
+.product-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  justify-items: center;
+}

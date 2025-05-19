@@ -1,0 +1,44 @@
+@import "../styles/main.scss";
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: $primary-color;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  .navbar-logo a {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: $secondary-color-black;
+    text-decoration: none;
+  }
+  .navbar-links {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+    margin: 0;
+    padding: 0;
+    li a {
+      color: $secondary-color-black;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+      &:hover {
+        color: darken($secondary-color-black, 20%);
+      }
+    }
+    .navbar-login-btn {
+      background: $secondary-color-black;
+      color: $primary-color;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      font-weight: bold;
+      transition: background 0.2s;
+      &:hover {
+        background: $secondary-color-gray;
+        color: $secondary-color-black;
+      }
+    }
+  }
+}

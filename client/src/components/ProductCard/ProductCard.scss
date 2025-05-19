@@ -1,0 +1,64 @@
+@import "../../styles/main.scss";
+
+.product-card {
+  background-color: $secondary-color-white;
+  border: 1px solid $secondary-color-gray;
+  border-radius: 8px;
+  margin: 15px;
+  padding: 15px;
+  width: 300px; // Adjust as needed
+  box-shadow: 0 2px 5px rgba($secondary-color-black, 0.1);
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 10px rgba($secondary-color-black, 0.15);
+  }
+
+  &__image {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; // Allows content to fill space, pushing button to bottom
+  }
+
+  &__name {
+    font-size: 1.5rem;
+    color: $primary-color;
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  &__description {
+    font-size: 0.9rem;
+    color: $secondary-color-black;
+    margin-bottom: 10px;
+    flex-grow: 1; // Allows description to take available space
+  }
+
+  &__price {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: $secondary-color-black;
+    margin-bottom: 10px;
+  }
+
+  &__category {
+    font-size: 0.8rem;
+    color: $secondary-color-gray; // Lighter text for category
+    margin-bottom: 15px;
+  }
+
+  &__button {
+    margin-top: auto; // Pushes button to the bottom of the card
+    width: 100%;
+  }
+}
