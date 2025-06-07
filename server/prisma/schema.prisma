@@ -37,6 +37,7 @@ model User {
   phone     String?
   isAdmin   Boolean  @default(false)
   orders    Order[]
+  cart      Cart?
   createdAt DateTime @default(now())
 }
 
@@ -54,6 +55,7 @@ model Product {
   updatedAt      DateTime              @updatedAt
   orderItems     OrderItem[]
   availabilities ProductAvailability[]
+  cartItems      CartItem[]
 }
 
 model ProductAvailability {
@@ -98,4 +100,28 @@ model OrderItem {
 
   order   Order   @relation(fields: [orderId], references: [id])
   product Product @relation(fields: [productId], references: [id])
+}
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId]) // Prevent duplicate products in same cart
 }
