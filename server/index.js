@@ -1357,6 +1357,317 @@ app.delete("/orders/:id", authenticateToken, async (req, res) => {
   }
 });
 
+// --- Cart Routes ---
+
+// GET /cart - Get user's cart (authenticated users only)
+app.get("/cart", authenticateToken, async (req, res) => {
+  const { userId } = req.user;
+
+  try {
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                imageUrl: true,
+                status: true,
+                stock: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!cart) {
+      return res.json({ items: [] });
+    }
+
+    // Filter out items where product is inactive/deleted and format for frontend
+    const validItems = cart.items
+      .filter((item) => item.product.status === "ACTIVE")
+      .map((item) => ({
+        id: item.product.id,
+        name: item.product.name,
+        price: item.product.price,
+        imageUrl: item.product.imageUrl,
+        quantity: item.quantity,
+      }));
+
+    res.json({ items: validItems });
+  } catch (error) {
+    console.error("Get cart error:", error);
+    res
+      .status(500)
+      .json({ error: "Error fetching cart", details: error.message });
+  }
+});
+
+// POST /cart/add - Add item to cart (authenticated users only)
+app.post("/cart/add", authenticateToken, async (req, res) => {
+  const { userId } = req.user;
+  const { productId, quantity = 1 } = req.body;
+
+  if (!productId || quantity < 1) {
+    return res
+      .status(400)
+      .json({ error: "Valid productId and quantity are required" });
+  }
+
+  try {
+    // Verify product exists and is active
+    const product = await prisma.product.findFirst({
+      where: {
+        id: productId,
+        isDeleted: false,
+        status: "ACTIVE",
+      },
+    });
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found or inactive" });
+    }
+
+    // Get or create cart
+    let cart = await prisma.cart.findUnique({
+      where: { userId },
+    });
+
+    if (!cart) {
+      cart = await prisma.cart.create({
+        data: { userId },
+      });
+    }
+
+    // Check if item already exists in cart
+    const existingItem = await prisma.cartItem.findUnique({
+      where: {
+        cartId_productId: {
+          cartId: cart.id,
+          productId: productId,
+        },
+      },
+    });
+
+    if (existingItem) {
+      // Update quantity
+      await prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: { quantity: existingItem.quantity + quantity },
+      });
+    } else {
+      // Create new cart item
+      await prisma.cartItem.create({
+        data: {
+          cartId: cart.id,
+          productId: productId,
+          quantity: quantity,
+        },
+      });
+    }
+
+    res.json({ message: "Item added to cart successfully" });
+  } catch (error) {
+    console.error("Add to cart error:", error);
+    res
+      .status(500)
+      .json({ error: "Error adding item to cart", details: error.message });
+  }
+});
+
+// PUT /cart/update - Update cart item quantity (authenticated users only)
+app.put("/cart/update", authenticateToken, async (req, res) => {
+  const { userId } = req.user;
+  const { productId, quantity } = req.body;
+
+  if (!productId || quantity < 1) {
+    return res
+      .status(400)
+      .json({ error: "Valid productId and quantity are required" });
+  }
+
+  try {
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+    });
+
+    if (!cart) {
+      return res.status(404).json({ error: "Cart not found" });
+    }
+
+    const cartItem = await prisma.cartItem.findUnique({
+      where: {
+        cartId_productId: {
+          cartId: cart.id,
+          productId: productId,
+        },
+      },
+    });
+
+    if (!cartItem) {
+      return res.status(404).json({ error: "Item not found in cart" });
+    }
+
+    await prisma.cartItem.update({
+      where: { id: cartItem.id },
+      data: { quantity },
+    });
+
+    res.json({ message: "Cart item updated successfully" });
+  } catch (error) {
+    console.error("Update cart error:", error);
+    res
+      .status(500)
+      .json({ error: "Error updating cart item", details: error.message });
+  }
+});
+
+// DELETE /cart/remove - Remove item from cart (authenticated users only)
+app.delete("/cart/remove", authenticateToken, async (req, res) => {
+  const { userId } = req.user;
+  const { productId } = req.body;
+
+  if (!productId) {
+    return res.status(400).json({ error: "productId is required" });
+  }
+
+  try {
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+    });
+
+    if (!cart) {
+      return res.status(404).json({ error: "Cart not found" });
+    }
+
+    const cartItem = await prisma.cartItem.findUnique({
+      where: {
+        cartId_productId: {
+          cartId: cart.id,
+          productId: productId,
+        },
+      },
+    });
+
+    if (!cartItem) {
+      return res.status(404).json({ error: "Item not found in cart" });
+    }
+
+    await prisma.cartItem.delete({
+      where: { id: cartItem.id },
+    });
+
+    res.json({ message: "Item removed from cart successfully" });
+  } catch (error) {
+    console.error("Remove from cart error:", error);
+    res
+      .status(500)
+      .json({ error: "Error removing item from cart", details: error.message });
+  }
+});
+
+// DELETE /cart/clear - Clear entire cart (authenticated users only)
+app.delete("/cart/clear", authenticateToken, async (req, res) => {
+  const { userId } = req.user;
+
+  try {
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+    });
+
+    if (!cart) {
+      return res.json({ message: "Cart already empty" });
+    }
+
+    await prisma.cartItem.deleteMany({
+      where: { cartId: cart.id },
+    });
+
+    res.json({ message: "Cart cleared successfully" });
+  } catch (error) {
+    console.error("Clear cart error:", error);
+    res
+      .status(500)
+      .json({ error: "Error clearing cart", details: error.message });
+  }
+});
+
+// POST /cart/sync - Sync localStorage cart to database when user logs in
+app.post("/cart/sync", authenticateToken, async (req, res) => {
+  const { userId } = req.user;
+  const { items } = req.body;
+
+  if (!Array.isArray(items)) {
+    return res.status(400).json({ error: "Items must be an array" });
+  }
+
+  try {
+    // Get or create cart
+    let cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: { items: true },
+    });
+
+    if (!cart) {
+      cart = await prisma.cart.create({
+        data: { userId },
+        include: { items: true },
+      });
+    }
+
+    // Process each item from localStorage
+    for (const localItem of items) {
+      const { id: productId, quantity } = localItem;
+
+      // Verify product exists and is active
+      const product = await prisma.product.findFirst({
+        where: {
+          id: productId,
+          isDeleted: false,
+          status: "ACTIVE",
+        },
+      });
+
+      if (!product) continue; // Skip invalid products
+
+      // Check if item already exists in database cart
+      const existingItem = cart.items.find(
+        (item) => item.productId === productId
+      );
+
+      if (existingItem) {
+        // Update with higher quantity (localStorage or database)
+        const newQuantity = Math.max(existingItem.quantity, quantity);
+        await prisma.cartItem.update({
+          where: { id: existingItem.id },
+          data: { quantity: newQuantity },
+        });
+      } else {
+        // Add new item to cart
+        await prisma.cartItem.create({
+          data: {
+            cartId: cart.id,
+            productId: productId,
+            quantity: quantity,
+          },
+        });
+      }
+    }
+
+    res.json({ message: "Cart synced successfully" });
+  } catch (error) {
+    console.error("Sync cart error:", error);
+    res
+      .status(500)
+      .json({ error: "Error syncing cart", details: error.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });

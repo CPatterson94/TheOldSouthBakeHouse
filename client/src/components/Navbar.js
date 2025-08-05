@@ -7,8 +7,8 @@ const Navbar = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [cartItemCount, setCartItemCount] = useState(0); // New state for cart item count
 
-  // Helper function to get cart item count from localStorage
-  const getCartItemCount = useCallback(() => {
+  // Helper function to get cart item count from localStorage (for guests)
+  const getLocalStorageCartCount = useCallback(() => {
     const cartString = localStorage.getItem("cart");
     if (cartString) {
       try {
@@ -27,9 +27,50 @@ const Navbar = () => {
     return 0;
   }, []);
 
+  // Helper function to get cart item count from database (for logged-in users)
+  const getDatabaseCartCount = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return 0;
+
+    try {
+      const response = await fetch("http://localhost:3002/cart", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.items && Array.isArray(data.items)) {
+          return data.items.reduce(
+            (total, item) => total + (Number(item.quantity) || 0),
+            0
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching database cart count:", error);
+    }
+    return 0;
+  }, []);
+
+  // Combined function to get cart count based on login status
+  const updateCartCount = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      // User is logged in - get count from database
+      const count = await getDatabaseCartCount();
+      setCartItemCount(count);
+    } else {
+      // User is not logged in - get count from localStorage
+      const count = getLocalStorageCartCount();
+      setCartItemCount(count);
+    }
+  }, [getDatabaseCartCount, getLocalStorageCartCount]);
+
   useEffect(() => {
     // Combined function to update all relevant states from localStorage or events
-    const updateAllStates = () => {
+    const updateAllStates = async () => {
       // Update login and admin state
       const token = localStorage.getItem("token");
       setIsLoggedIn(!!token);
@@ -44,7 +85,7 @@ const Navbar = () => {
         setIsAdmin(false);
       }
       // Update cart item count
-      setCartItemCount(getCartItemCount());
+      await updateCartCount();
     };
 
     updateAllStates(); // Initial call to set states
@@ -66,7 +107,7 @@ const Navbar = () => {
       window.removeEventListener("authchange", updateAllStates);
       window.removeEventListener("cartchange", updateAllStates);
     };
-  }, [getCartItemCount]); // getCartItemCount is stable due to useCallback
+  }, [updateCartCount]); // updateCartCount is stable due to useCallback
 
   // The old syncLoginState function is now integrated into updateAllStates.
 

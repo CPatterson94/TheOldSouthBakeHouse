@@ -27,19 +27,52 @@ const ProductList = () => {
     fetchProducts();
   }, []);
 
-  const handleAddToCart = (product) => {
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    const existing = cart.find((item) => item.id === product.id);
-    if (existing) {
-      cart = cart.map((item) =>
-        item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-      );
+  const handleAddToCart = async (product) => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      // User is logged in - add to database cart
+      try {
+        const response = await fetch("http://localhost:3002/cart/add", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            productId: product.id,
+            quantity: 1,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to add to cart");
+        }
+
+        setCartMessage(`${product.name} added to cart!`);
+        window.dispatchEvent(new Event("cartchange"));
+      } catch (error) {
+        console.error("Error adding to cart:", error);
+        setCartMessage("Error adding to cart");
+      }
     } else {
-      cart.push({ ...product, quantity: 1 });
+      // User is not logged in - use localStorage
+      let cart = JSON.parse(localStorage.getItem("cart")) || [];
+      const existing = cart.find((item) => item.id === product.id);
+      if (existing) {
+        cart = cart.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        cart.push({ ...product, quantity: 1 });
+      }
+      localStorage.setItem("cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("cartchange"));
+      setCartMessage(`${product.name} added to cart!`);
     }
-    localStorage.setItem("cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cartchange")); // Dispatch cartchange event
-    setCartMessage(`${product.name} added to cart!`);
+
     setTimeout(() => setCartMessage(""), 1500);
   };
 
