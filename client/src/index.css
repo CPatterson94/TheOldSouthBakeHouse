@@ -1,13 +1,56 @@
 body {
+  font-family: sans-serif;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
+  background-color: #ffffff;
+  color: #000000;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: #ffc0cb;
+}
+
+a {
+  color: #ffc0cb;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  background-color: #ffc0cb;
+  color: #000000;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: #d3d3d3;
+  color: #000000;
+}
+.btn-secondary:hover {
+  opacity: 0.9;
+}
+
+/*# sourceMappingURL=index.css.map */

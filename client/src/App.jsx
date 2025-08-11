@@ -1,16 +1,16 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
-import HomePage from "./pages/HomePage";
-import AboutPage from "./pages/AboutPage";
-import ProductList from "./components/ProductList/ProductList";
-import AuthPage from "./pages/AuthPage";
-import AccountPage from "./pages/AccountPage";
-import AdminDashboard from "./pages/AdminDashboard";
-import AddProductPage from "./pages/AddProductPage";
-import ManageProductsPage from "./pages/ManageProductsPage";
-import ArchivedProductsPage from "./pages/ArchivedProductsPage";
-import CartPage from "./pages/CartPage";
+import Navbar from "./components/Navbar.jsx";
+import HomePage from "./pages/HomePage.jsx";
+import AboutPage from "./pages/AboutPage.jsx";
+import ProductList from "./components/ProductList/ProductList.jsx";
+import AuthPage from "./pages/AuthPage.jsx";
+import AccountPage from "./pages/AccountPage.jsx";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AddProductPage from "./pages/AddProductPage.jsx";
+import ManageProductsPage from "./pages/ManageProductsPage.jsx";
+import ArchivedProductsPage from "./pages/ArchivedProductsPage.jsx";
+import CartPage from "./pages/CartPage.jsx";
 import "./App.scss";
 import "./styles/main.scss";
 

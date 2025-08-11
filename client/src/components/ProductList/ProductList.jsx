@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import ProductCard from "../ProductCard/ProductCard";
+import ProductCard from "../ProductCard/ProductCard.jsx";
 import "./ProductList.scss";
 
 const ProductList = () => {
