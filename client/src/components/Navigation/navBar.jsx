@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import "./Navbar.scss";
+import "../../styles/navBar.scss";
 
 const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar.jsx";
+import Navbar from "./components/Navigation/navBar.jsx";
+import Footer from "./components/Navigation/footer.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import AboutPage from "./pages/AboutPage.jsx";
 import ProductList from "./components/ProductList/ProductList.jsx";
@@ -58,9 +59,7 @@ function App() {
             <Route path="/cart" element={<CartPage />} />
           </Routes>
         </main>
-        <footer>
-          <p>&copy; {new Date().getFullYear()} The Old South Bake House</p>
-        </footer>
+        <Footer />
       </div>
     </Router>
   );

@@ -1,0 +1,15 @@
+@import "./main.scss";
+
+// Footer styling
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  margin-top: 40px;
+  padding: 20px;
+  background-color: $secondary-color-gray;
+  color: $secondary-color-black;
+  font-size: 0.9rem;
+  z-index: 1000;
+}
