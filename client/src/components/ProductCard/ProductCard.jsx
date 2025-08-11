@@ -1,7 +1,13 @@
 import React from "react";
 import "./ProductCard.scss";
 
-const ProductCard = ({ product, onAddToCart }) => {
+const ProductCard = ({
+  product,
+  onAddToCart,
+  cartQuantity = 0,
+  onIncreaseQuantity,
+  onDecreaseQuantity,
+}) => {
   if (!product) {
     return null;
   }
@@ -22,12 +28,31 @@ const ProductCard = ({ product, onAddToCart }) => {
           ${product.price ? product.price.toFixed(2) : "N/A"}
         </p>
         <p className="product-card__category">Category: {product.category}</p>
-        <button
-          className="btn btn-primary product-card__button"
-          onClick={() => onAddToCart(product)}
-        >
-          Add to Cart
-        </button>
+
+        {cartQuantity > 0 ? (
+          <div className="product-card__quantity-selector">
+            <button
+              className="btn btn-outline-secondary btn-sm quantity-btn"
+              onClick={() => onDecreaseQuantity(product.id)}
+            >
+              -
+            </button>
+            <span className="quantity-display">{cartQuantity}</span>
+            <button
+              className="btn btn-outline-secondary btn-sm quantity-btn"
+              onClick={() => onIncreaseQuantity(product.id)}
+            >
+              +
+            </button>
+          </div>
+        ) : (
+          <button
+            className="btn btn-primary product-card__button"
+            onClick={() => onAddToCart(product)}
+          >
+            Add to Cart
+          </button>
+        )}
       </div>
     </div>
   );
