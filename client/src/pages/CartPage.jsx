@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import "../styles/cart.scss";
 
 const initialGuest = { name: "", email: "" };
 
@@ -443,26 +444,32 @@ const CartPage = () => {
       {!isLoggedIn && cart.length > 0 && (
         <div style={{ marginTop: 20 }}>
           <h3>Guest Checkout</h3>
-          <label>
-            Name
-            <input
-              type="text"
-              name="name"
-              value={guest.name}
-              onChange={handleGuestChange}
-              required
-            />
-          </label>
-          <label>
-            Email
-            <input
-              type="email"
-              name="email"
-              value={guest.email}
-              onChange={handleGuestChange}
-              required
-            />
-          </label>
+          <div className="guest-checkout-form">
+            <div className="form-group">
+              <label>
+                Name:
+                <input
+                  type="text"
+                  name="name"
+                  value={guest.name}
+                  onChange={handleGuestChange}
+                  required
+                />
+              </label>
+            </div>
+            <div className="form-group">
+              <label>
+                Email:
+                <input
+                  type="email"
+                  name="email"
+                  value={guest.email}
+                  onChange={handleGuestChange}
+                  required
+                />
+              </label>
+            </div>
+          </div>
         </div>
       )}
       {error && <div style={{ color: "red", marginTop: 10 }}>{error}</div>}
@@ -481,11 +488,7 @@ const CartPage = () => {
 
       {/* Remove All Confirmation Modal */}
       {showRemoveModal && (
-        <div
-          className="modal show"
-          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
-          tabIndex="-1"
-        >
+        <div className="modal show remove-modal" tabIndex="-1">
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
               <div className="modal-header">
@@ -494,10 +497,7 @@ const CartPage = () => {
               <div className="modal-body">
                 <p>Are you sure you want to delete all items?</p>
               </div>
-              <div
-                className="modal-footer"
-                style={{ display: "flex", justifyContent: "space-evenly" }}
-              >
+              <div className="modal-footer">
                 <button
                   type="button"
                   className="btn btn-secondary"
