@@ -1,0 +1,54 @@
+@import "./main.scss";
+
+// Styles for Add Product page
+.add-product-page {
+  h2 {
+    color: $secondary-color-black;
+  }
+  .add-product-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    padding: 2rem 2.5rem;
+    background: $primary-color;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    label {
+      font-weight: bold;
+      color: $secondary-color-black;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 5px;
+      border: 1px solid $secondary-color-gray;
+      font-size: 1rem;
+      &:focus {
+        border-color: darken($primary-color, 15%);
+        outline: none;
+      }
+    }
+
+    button {
+      background: darken($primary-color, 15%);
+      color: $secondary-color-black;
+      padding: 0.75rem 1.5rem;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.2s;
+      width: fit-content;
+      align-self: center;
+
+      &:hover {
+        background-color: darken($primary-color, 25%);
+        transform: translateY(-2px);
+      }
+    }
+  }
+}

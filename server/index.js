@@ -1597,22 +1597,37 @@ app.delete("/cart/clear", authenticateToken, async (req, res) => {
   }
 });
 
-// POST /cart/sync - Sync localStorage cart to database when user logs in
+// POST /cart/sync - Merge guest (localStorage) cart into user's cart on login
+// Behavior: For each product in guest cart, add its quantity to any existing quantity in user cart.
+// If product not present in user cart, create it. Skips inactive/deleted products silently.
 app.post("/cart/sync", authenticateToken, async (req, res) => {
   const { userId } = req.user;
-  const { items } = req.body;
+  const { items } = req.body; // Expect [{ id: productId, quantity }]
 
   if (!Array.isArray(items)) {
     return res.status(400).json({ error: "Items must be an array" });
   }
 
+  // Filter and normalize incoming items: positive integer quantities only
+  const normalized = items
+    .filter(
+      (it) => it && typeof it.id === "number" && typeof it.quantity === "number"
+    )
+    .map((it) => ({
+      id: it.id,
+      quantity: Math.max(1, Math.floor(it.quantity)),
+    }));
+
+  if (normalized.length === 0) {
+    return res.json({ message: "Nothing to sync", items: [] });
+  }
+
   try {
-    // Get or create cart
+    // Ensure cart exists
     let cart = await prisma.cart.findUnique({
       where: { userId },
       include: { items: true },
     });
-
     if (!cart) {
       cart = await prisma.cart.create({
         data: { userId },
@@ -1620,51 +1635,71 @@ app.post("/cart/sync", authenticateToken, async (req, res) => {
       });
     }
 
-    // Process each item from localStorage
-    for (const localItem of items) {
-      const { id: productId, quantity } = localItem;
+    // Build quick lookup of existing cart items
+    const existingMap = new Map(cart.items.map((ci) => [ci.productId, ci]));
 
-      // Verify product exists and is active
+    for (const localItem of normalized) {
+      const productId = localItem.id;
+      const addQuantity = localItem.quantity;
+
+      // Validate product still active
       const product = await prisma.product.findFirst({
-        where: {
-          id: productId,
-          isDeleted: false,
-          status: "ACTIVE",
-        },
+        where: { id: productId, isDeleted: false, status: "ACTIVE" },
+        select: { id: true },
       });
+      if (!product) continue; // skip invalid
 
-      if (!product) continue; // Skip invalid products
-
-      // Check if item already exists in database cart
-      const existingItem = cart.items.find(
-        (item) => item.productId === productId
-      );
-
-      if (existingItem) {
-        // Update with higher quantity (localStorage or database)
-        const newQuantity = Math.max(existingItem.quantity, quantity);
+      const existing = existingMap.get(productId);
+      if (existing) {
+        const newQuantity = existing.quantity + addQuantity; // additive merge
         await prisma.cartItem.update({
-          where: { id: existingItem.id },
+          where: { id: existing.id },
           data: { quantity: newQuantity },
         });
       } else {
-        // Add new item to cart
-        await prisma.cartItem.create({
-          data: {
-            cartId: cart.id,
-            productId: productId,
-            quantity: quantity,
-          },
+        const created = await prisma.cartItem.create({
+          data: { cartId: cart.id, productId, quantity: addQuantity },
         });
+        existingMap.set(productId, created);
       }
     }
 
-    res.json({ message: "Cart synced successfully" });
+    // Return updated cart items with product data
+    const updatedCart = await prisma.cart.findUnique({
+      where: { userId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                imageUrl: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const responseItems = (updatedCart?.items || [])
+      .filter((i) => i.product.status === "ACTIVE")
+      .map((i) => ({
+        id: i.product.id,
+        name: i.product.name,
+        price: i.product.price,
+        imageUrl: i.product.imageUrl,
+        quantity: i.quantity,
+      }));
+
+    res.json({ message: "Cart merged successfully", items: responseItems });
   } catch (error) {
     console.error("Sync cart error:", error);
     res
       .status(500)
-      .json({ error: "Error syncing cart", details: error.message });
+      .json({ error: "Error merging cart", details: error.message });
   }
 });
 
