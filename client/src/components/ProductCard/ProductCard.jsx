@@ -27,6 +27,11 @@ const ProductCard = ({
         <p className="product-card__price">
           ${product.price ? product.price.toFixed(2) : "N/A"}
         </p>
+        {product.ingredients && (
+          <p className="product-card__ingredients">
+            <strong>Ingredients:</strong> {product.ingredients}
+          </p>
+        )}
         <p className="product-card__category">Category: {product.category}</p>
 
         {cartQuantity > 0 ? (

@@ -1,32 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/main.scss";
 import "../styles/AddProduct.scss";
-
-const CATEGORY_OPTIONS = [
-  "Bread",
-  "Pastry",
-  "Cake",
-  "Cookie",
-  "Pie",
-  "Savory",
-  "Other",
-];
 
 const initialState = {
   name: "",
   description: "",
+  ingredients: "",
   price: "",
   imageUrl: "",
-  category: CATEGORY_OPTIONS[0],
+  category: "",
   stock: "",
   status: "ACTIVE",
 };
 
 const AddProductPage = () => {
   const [form, setForm] = useState(initialState);
+  const [categories, setCategories] = useState([]);
+  const [catLoading, setCatLoading] = useState(true);
+  const [catError, setCatError] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCategories = async () => {
+      setCatLoading(true);
+      setCatError("");
+      try {
+        console.debug("[AddProduct] Fetching categories...");
+        const res = await fetch("http://localhost:3002/products/categories");
+        let data;
+        try {
+          data = await res.json();
+        } catch (parseErr) {
+          throw new Error("Invalid JSON from categories endpoint");
+        }
+        if (!res.ok) throw new Error(data.error || "Failed to load categories");
+        if (cancelled) return;
+        console.debug(`[AddProduct] Categories received:`, data);
+        setCategories(Array.isArray(data) ? data : []);
+        setForm((prev) => ({ ...prev, category: (data && data[0]) || "" }));
+        if (!data || !data.length) {
+          setCatError(
+            "No categories found. Create one by adding a product or check server seeding."
+          );
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.error("[AddProduct] Category fetch error:", err);
+        setCatError(err.message);
+      } finally {
+        if (!cancelled) setCatLoading(false);
+      }
+    };
+    fetchCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,6 +69,10 @@ const AddProductPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.category) {
+      setError("Please select a category before submitting.");
+      return;
+    }
     setLoading(true);
     setError("");
     setSuccess("");
@@ -52,12 +88,13 @@ const AddProductPage = () => {
           ...form,
           price: parseFloat(form.price),
           stock: parseInt(form.stock, 10),
+          ingredients: form.ingredients?.trim() || null,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Unknown error");
       setSuccess("Product added successfully!");
-      setForm(initialState);
+      setForm((prev) => ({ ...initialState, category: categories[0] || "" }));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -83,8 +120,19 @@ const AddProductPage = () => {
           Description
           <textarea
             name="description"
+            placeholder="A delicious product..."
             value={form.description}
             onChange={handleChange}
+          />
+        </label>
+        <label>
+          Ingredients (one per line or comma separated)
+          <textarea
+            name="ingredients"
+            placeholder="Flour, Water, Yeast, Salt..."
+            value={form.ingredients}
+            onChange={handleChange}
+            rows={5}
           />
         </label>
         <label>
@@ -115,14 +163,32 @@ const AddProductPage = () => {
             value={form.category}
             onChange={handleChange}
             required
+            disabled={catLoading}
           >
-            {CATEGORY_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
+            {catLoading && <option value="">Loading categories...</option>}
+            {!catLoading && !categories.length && (
+              <option value="">No categories available</option>
+            )}
+            {!catLoading &&
+              categories.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
           </select>
         </label>
+        {catError && (
+          <div
+            style={{
+              color: "#b35b00",
+              fontSize: 12,
+              marginTop: -6,
+              marginBottom: 10,
+            }}
+          >
+            {catError}
+          </div>
+        )}
         <label>
           Stock
           <input

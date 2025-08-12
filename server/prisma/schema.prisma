@@ -29,6 +29,14 @@ enum ProductStatus {
   ARCHIVED
 }
 
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  // Future: relate to Product via foreign key if we migrate Product.category -> categoryId
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   name      String?
@@ -45,6 +53,7 @@ model Product {
   id             Int                   @id @default(autoincrement())
   name           String
   description    String?
+  ingredients    String?               @db.Text // Full ingredient list entered as free-form text
   price          Float
   imageUrl       String?
   category       String

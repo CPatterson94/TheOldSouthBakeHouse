@@ -6,6 +6,63 @@ const { authenticateToken } = require("./middleware"); // Import middleware
 const cors = require("cors"); // Import cors
 
 const prisma = new PrismaClient();
+
+// Ensure base categories exist in DB
+async function seedBaseCategories() {
+  const base = [
+    "Bread",
+    "Pastry", // corrected spelling
+    "Cake",
+    "Cookie",
+    "Pie",
+    "Savory",
+    "Other",
+  ];
+  try {
+    // If legacy misspelling exists, rename it
+    const legacy = await prisma.category.findUnique({
+      where: { name: "Pastery" },
+    });
+    if (legacy) {
+      try {
+        // If a correctly spelled one already exists, deactivate the legacy to avoid unique conflict
+        const existingCorrect = await prisma.category.findUnique({
+          where: { name: "Pastry" },
+        });
+        if (existingCorrect) {
+          await prisma.category.update({
+            where: { id: legacy.id },
+            data: { isActive: false, name: `Pastery-old-${legacy.id}` },
+          });
+        } else {
+          await prisma.category.update({
+            where: { id: legacy.id },
+            data: { name: "Pastry" },
+          });
+        }
+        console.log("Renamed legacy category 'Pastery' to 'Pastry'");
+      } catch (renameErr) {
+        console.warn("Could not rename legacy 'Pastery':", renameErr.message);
+      }
+    }
+
+    await Promise.all(
+      base.map((name) =>
+        prisma.category.upsert({
+          where: { name },
+          update: { isActive: true },
+          create: { name },
+        })
+      )
+    );
+    console.log("Category seed complete (" + base.join(", ") + ")");
+  } catch (err) {
+    console.error("Category seed failed:", err.message);
+  }
+}
+
+seedBaseCategories();
+
 const app = express();
 const port = process.env.PORT || 3002;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -336,6 +393,61 @@ app.delete("/users/:id", authenticateToken, async (req, res) => {
 
 // --- Product Routes ---
 
+// Helper to ensure a category record exists (case-sensitive unique)
+async function ensureCategoryExists(name) {
+  if (!name) return;
+  try {
+    await prisma.category.upsert({
+      where: { name },
+      update: { isActive: true },
+      create: { name },
+    });
+  } catch (e) {
+    console.warn("ensureCategoryExists failed for", name, e.message);
+  }
+}
+
+// IMPORTANT: Define the categories route BEFORE the dynamic /products/:id route
+// so that "/products/categories" is not intercepted by "/products/:id" (id = "categories").
+app.get("/products/categories", async (req, res) => {
+  try {
+    let categories = await prisma.category.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: { name: true },
+    });
+
+    if (categories.length === 0) {
+      // Fallback: derive from existing products, then seed Category table
+      const productCats = await prisma.product.findMany({
+        where: { isDeleted: false },
+        select: { category: true },
+        distinct: ["category"],
+      });
+      const unique = [
+        ...new Set(productCats.map((p) => p.category).filter(Boolean)),
+      ].sort();
+      if (unique.length) {
+        await prisma.$transaction(
+          unique.map((c) =>
+            prisma.category.create({
+              data: { name: c },
+            })
+          )
+        );
+        categories = unique.map((name) => ({ name }));
+      }
+    }
+
+    res.json(categories.map((c) => c.name));
+  } catch (error) {
+    console.error("Get categories error:", error);
+    res
+      .status(500)
+      .json({ error: "Error fetching categories", details: error.message });
+  }
+});
+
 // GET all active products
 app.get("/products", async (req, res) => {
   try {
@@ -378,8 +490,16 @@ app.post("/products", authenticateToken, async (req, res) => {
     return res.status(403).json({ error: "Forbidden: Admin access required" });
   }
 
-  const { name, description, price, imageUrl, category, stock, status } =
-    req.body;
+  const {
+    name,
+    description,
+    ingredients,
+    price,
+    imageUrl,
+    category,
+    stock,
+    status,
+  } = req.body;
 
   if (!name || price === undefined || !category || stock === undefined) {
     return res
@@ -398,10 +518,12 @@ app.post("/products", authenticateToken, async (req, res) => {
   }
 
   try {
+    await ensureCategoryExists(category);
     const newProduct = await prisma.product.create({
       data: {
         name,
         description,
+        ingredients: ingredients || null,
         price,
         imageUrl,
         category,
@@ -412,7 +534,6 @@ app.post("/products", authenticateToken, async (req, res) => {
     res.status(201).json(newProduct);
   } catch (error) {
     console.error("Create product error:", error);
-    // Add more specific error handling if needed (e.g., for invalid enum status)
     res
       .status(500)
       .json({ error: "Error creating product", details: error.message });
@@ -429,6 +550,7 @@ app.put("/products/:id", authenticateToken, async (req, res) => {
   const {
     name,
     description,
+    ingredients,
     price,
     imageUrl,
     category,
@@ -447,8 +569,7 @@ app.put("/products/:id", authenticateToken, async (req, res) => {
       .status(400)
       .json({ error: "Stock must be a non-negative integer" });
   }
-  // Add validation for status enum if provided
-  if (status && !["ACTIVE", "INACTIVE", "ARCHIVED"].includes(status)) {
+  if (status && ["ACTIVE", "INACTIVE", "ARCHIVED"].includes(status) === false) {
     return res.status(400).json({ error: "Invalid product status" });
   }
 
@@ -462,17 +583,23 @@ app.put("/products/:id", authenticateToken, async (req, res) => {
         .json({ error: "Product not found or has been deleted" });
     }
 
+    if (category) {
+      await ensureCategoryExists(category);
+    }
+
     const updatedProduct = await prisma.product.update({
       where: { id: parseInt(id) },
       data: {
         name,
         description,
+        ingredients:
+          ingredients === undefined ? undefined : ingredients || null,
         price,
         imageUrl,
         category,
         stock,
         status,
-        isDeleted, // Allow admin to explicitly un-delete or modify this
+        isDeleted,
       },
     });
     res.json(updatedProduct);
@@ -1702,6 +1829,9 @@ app.post("/cart/sync", authenticateToken, async (req, res) => {
       .json({ error: "Error merging cart", details: error.message });
   }
 });
+
+// GET distinct product categories
+// (Removed duplicate /products/categories route; now defined earlier before /products/:id)
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

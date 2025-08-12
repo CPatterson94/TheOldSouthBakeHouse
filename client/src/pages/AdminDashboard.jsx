@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/main.scss";
-import "../styles/admin.scss";
+import "../styles/adminDashboard.scss";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
