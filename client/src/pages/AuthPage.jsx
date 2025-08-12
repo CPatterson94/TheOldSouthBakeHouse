@@ -52,6 +52,30 @@ const AuthPage = () => {
       if (isLogin) {
         // Save token to localStorage (for demo)
         localStorage.setItem("token", data.token);
+        // Sync guest cart (if any) to user cart
+        try {
+          const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
+          if (guestCart.length > 0) {
+            await fetch("http://localhost:3002/cart/sync", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${data.token}`,
+              },
+              body: JSON.stringify({
+                items: guestCart.map((i) => ({
+                  id: i.id,
+                  quantity: i.quantity,
+                })),
+              }),
+            });
+            // Clear guest cart after successful merge
+            localStorage.removeItem("cart");
+            window.dispatchEvent(new Event("cartchange"));
+          }
+        } catch (syncErr) {
+          console.error("Cart sync after login failed", syncErr);
+        }
         window.dispatchEvent(new Event("authchange")); // Notify navbar to update
         navigate("/");
       }

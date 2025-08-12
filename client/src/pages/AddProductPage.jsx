@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "../styles/main.scss";
+import "../styles/AddProduct.scss";
 
 const CATEGORY_OPTIONS = [
   "Bread",

@@ -1,6 +1,9 @@
 @import "./main.scss";
 
 .admin-dashboard {
+  h2 {
+    color: $secondary-color-black;
+  }
   .admin-tiles {
     display: flex;
     gap: 2rem;
