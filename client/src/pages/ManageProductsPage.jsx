@@ -178,6 +178,7 @@ const ManageProductsPage = () => {
             <thead>
               <tr>
                 <th>Name</th>
+                <th>Stock</th>
                 <th>Status</th>
                 <th>Change Status</th>
                 <th>Edit</th>
@@ -195,6 +196,7 @@ const ManageProductsPage = () => {
                   }
                 >
                   <td>{product.name}</td>
+                  <td>{product.stock}</td>
                   <td>{product.status}</td>
                   <td>
                     <select
