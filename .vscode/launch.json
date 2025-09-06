@@ -1,0 +1,24 @@
+{
+  // Launch configurations to open browsers after tasks start
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch: Client + Prisma Studio",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "preLaunchTask": "Start: All",
+      "postDebugTask": "terminate",
+      "presentation": {
+        "reveal": "always"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Open Client and Prisma Studio",
+      "configurations": ["Launch: Client + Prisma Studio"],
+      "preLaunchTask": "Start: All"
+    }
+  ]
+}

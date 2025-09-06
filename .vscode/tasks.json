@@ -1,0 +1,105 @@
+{
+  // VS Code tasks to start client, server, and Prisma Studio in parallel
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Client: start",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "start"],
+      "options": {
+        "cwd": "${workspaceFolder}/client"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "client",
+        "focus": false
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Server: dev",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "options": {
+        "cwd": "${workspaceFolder}/server"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "server",
+        "focus": false
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Prisma: studio",
+      "type": "shell",
+      "command": "npx",
+      "args": ["prisma", "studio"],
+      "options": {
+        "cwd": "${workspaceFolder}/server"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "prisma",
+        "focus": false
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Open: Prisma Studio Browser",
+      "type": "shell",
+      "command": "/bin/sh",
+      "args": [
+        "-c",
+        // wait briefly for studio to start then open default browser
+        "sleep 2 && xdg-open http://localhost:5555 || true"
+      ],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Client: sass watch",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "sass"],
+      "options": {
+        "cwd": "${workspaceFolder}/client"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "sass",
+        "focus": false
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      // One-click master task
+      "label": "Start: All",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "Client: start",
+        "Client: sass watch",
+        "Server: dev",
+        "Prisma: studio",
+        "Open: Prisma Studio Browser"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    }
+  ]
+}
